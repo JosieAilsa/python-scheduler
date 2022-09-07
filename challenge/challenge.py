@@ -24,10 +24,35 @@ class HourlyTask:
     @property
     def next_to_do(self) -> Union[datetime, None]:
         """Return the next datetime that needs doing."""
-        raise NotImplementedError("Fill me in!")
+        #If no task for the most recent hour, return that hour 
+        if self.latest_done == None: 
+            #Abstract the below out into method into separate abstract helper class for getting the current time - this is not dry 
+            now = datetime.utcnow()
+            now_hour_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            last_hour_start = now_hour_start - timedelta(hours=1)
+            self._next_to_do = last_hour_start
+            return self._next_to_do 
+        #Determine if backfilled task to do   
+        if self.earliest_done != self.start_from: 
+            next_todo = self.earliest_done - timedelta(hours=1)
+            self._next_to_do = next_todo
+            return self._next_to_do 
+        #Otherwise, task is currently up to date
+        return None
 
     def schedule(self, when: datetime) -> None:
         """Schedule this task at the 'when' time, update local time markers."""
+        #If its not the current time, update the earliest done 
+        now = datetime.utcnow()
+        now_hour_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        last_hour_start = now_hour_start - timedelta(hours=1)
+        #Set to latest done if when matches most recent time 
+        if when != last_hour_start:
+            self.latest_done = when
+            return None 
+        #Else it's backfilled
+        self.earliest_done = last_hour_start
+        #If its the current hour update the lastest done 
         raise NotImplementedError("Fill me in!")
 
 
@@ -48,7 +73,12 @@ class Scheduler:
 
     def get_tasks_to_do(self) -> List[HourlyTask]:
         """Get the list of tasks that need doing."""
-        return []
+        tasks = self.task_store
+        tasks_todo = []
+        for task in tasks:
+            if task.next_to_do != None:
+                tasks_todo.append(task.next_to_do)
+        return [tasks_todo]
 
     def schedule_tasks(self) -> None:
         """Schedule the tasks.
@@ -89,3 +119,8 @@ class Controller:
             elapsed = after - before
             wait = self.throttle_wait.total_seconds() - elapsed.total_seconds()
             time.sleep(max([0, wait]))
+
+sch = Scheduler()
+task1 = HourlyTask(start_from=datetime.utcnow())
+sch.register_task(task1)
+sch.get_tasks_to_do()
