@@ -32,20 +32,20 @@ class HourlyTask:
         task_hour_start = FormattedDate(self.start_from).get_now_hour_start
 
           #If task to be done is in the current hour return none - as too late
-        if task_hour_start > last_hour_start or last_hour_start == self.repeat_until: 
-            return None  
+        if task_hour_start >= last_hour_start or last_hour_start == self.repeat_until: 
+            return None    
 
         #If the latest done doesn't exist or its less than current time, return current hour todo
         if self.latest_done == None or self.latest_done < last_hour_start: 
             self._next_to_do  = last_hour_start
             return self._next_to_do
 
-
-        #If backdated, return previous hour to earliest done so far
-        if self.earliest_done != None:
-            next_todo = self.earliest_done + timedelta(hours=1)
+        #If backdated and not complete, return previous hour to earliest done so far
+        if self.earliest_done != None and self.earliest_done != self.start_from:
+            next_todo = self.earliest_done - timedelta(hours=1)
             self._next_to_do = next_todo
             return self._next_to_do 
+
         #Otherwise, task is currently up to date
         return None
 
@@ -54,20 +54,11 @@ class HourlyTask:
     def schedule(self, when: datetime) -> None:
         """Schedule this task at the 'when' time, update local time markers."""
         #If its not the current time, update the earliest done 
-        formatted_time = FormattedDate(datetime.utcnow())
-        last_hour_start = formatted_time.get_last_hour_start
-      
-        #Set to latest done if when matches most recent time 
-        if when == last_hour_start:
-            self.latest_done = when
-            #If there is no earliest done set that to be earliest done 
-            if self.earliest_done == None: 
-                self.earliest_done = when
-            return
-        #Else it's backfilled
-        self.earliest_done = when
-        #If its the current hour update the lastest done 
-        raise NotImplementedError("Fill me in!")
+        self.latest_done = when
+        #If there is no earliest done set that to be earliest done 
+        if self.earliest_done == None: 
+            self.earliest_done = when
+        return 
 
 
 class Scheduler:
@@ -86,12 +77,11 @@ class Scheduler:
         [self.register_task(task) for task in task_list]
 
     def get_tasks_to_do(self) -> List[HourlyTask]:
-        
         """Get the list of tasks that need doing."""
         tasks = self.task_store
         tasks_todo = []
         for task in tasks:
-            if task.next_to_do != None:
+            if task.next_to_do != None: 
                 tasks_todo.append(task)
         return tasks_todo
 
@@ -102,8 +92,6 @@ class Scheduler:
         are done before any that need backfilling.
         """
         tasks = self.get_sorted_tasks_to_do()
-        formatted_time = FormattedDate( datetime.utcnow())
-        last_hour_start = formatted_time.get_last_hour_start
         for task in tasks: 
             task.schedule(last_hour_start)
     
@@ -188,7 +176,7 @@ finished_task_with_backdate = HourlyTask(start_from=yesterday, latest_done=last_
 finished_task = HourlyTask(start_from=date, latest_done=now_hour_start)
 
 #Act 
-sch.register_tasks([finished_task_with_backdate, unfinished_task, unfinished_task_with_backdate, finished_task])
+sch.register_tasks([unfinished_task, unfinished_task_with_backdate, finished_task_with_backdate, finished_task])
 sorted_todos = sch.get_sorted_tasks_to_do()
 print(now_hour_start)
 print(sorted_todos)
