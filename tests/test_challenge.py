@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
+from tkinter.tix import Form
 from unittest import TestCase
 TestCase.maxDiff = None
 
 from freezegun import freeze_time
 
-from challenge.challenge import HourlyTask, Scheduler, Controller
+from challenge.challenge import FormattedDate, HourlyTask, Scheduler, Controller
 
 
 class TestHourlyTask(TestCase):
@@ -43,11 +44,28 @@ class TestScheduler(TestCase):
 
     def test_can_find_todos_with_most_recent_first(self):
         """Check found tasks are in order of most recent -> most historic."""
-        #Arrange 
-        
-        #Act 
+        sch = Scheduler()
+        #Arrange: 
+        with freeze_time(datetime(2022, 8, 1, 8, 15)):
+            yesterday = datetime(2022, 7, 31)
+            last_hour_start = FormattedDate(datetime.utcnow()).get_last_hour_start
+            now_hour_start = FormattedDate(datetime.utcnow()).get_now_hour_start
+            backdated_time_1 = last_hour_start - timedelta(hours = 1)
+            backdated_time_2 = last_hour_start - timedelta(hours = 2)
 
-        #Assert 
+            unfinished_task = HourlyTask(start_from=yesterday)        
+            unfinished_task_with_backdate =HourlyTask(start_from=yesterday, latest_done=backdated_time_1,earliest_done=backdated_time_2)
+            finished_task_with_backdate = HourlyTask(start_from=yesterday, latest_done=last_hour_start, earliest_done=backdated_time_1)
+            finished_task = HourlyTask(start_from=yesterday, latest_done=now_hour_start)
+
+    #Act 
+        sch.register_tasks([finished_task_with_backdate, unfinished_task, unfinished_task_with_backdate, finished_task])
+        sorted_todos = sch.get_sorted_tasks_to_do()
+    #Assert 
+        self.assertEqual(sorted_todos, [unfinished_task, unfinished_task_with_backdate,finished_task_with_backdate])
+
+    
+
 
 
 class TestController(TestCase):
@@ -72,3 +90,24 @@ class TestController(TestCase):
                 datetime(2022, 8, 1, 7)
             )
 
+    # #Arrange   
+    # date1 = datetime(2022, 7, 31)
+    # date2 = datetime(2022,8,1)
+    # date3 = datetime(2022,8,2)
+    # #hours
+    # last_hour_start = FormattedDate(datetime.utcnow()).get_now_hour_start
+    # now_hour_start = FormattedDate(datetime.utcnow()).get_last_hour_start
+    # backdated_time_1 = FormattedDate(datetime.utcnow()).get_last_hour_start - timedelta(hours = 1)
+    # backdated_time_2 = FormattedDate(datetime.utcnow()).get_last_hour_start - timedelta(hours = 2)
+
+    # #Should be first
+    # task_with_todo = HourlyTask(start_from=date2)
+
+    # #Should be second
+    # unfinished_task_backdate =HourlyTask(start_from=date3, latest_done=backdated_time_1,earliest_done=backdated_time_2)
+
+    # #Should be last
+    # finished_task_with_backdate = HourlyTask(start_from=date1, latest_done=last_hour_start, earliest_done=backdated_time_1)
+
+    # sch.register_tasks([task_with_todo,task_with_todo,finished_task_with_backdate])
+    # sorted_todos = sch.get_sorted_tasks_to_do()
