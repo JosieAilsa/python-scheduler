@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from unittest import TestCase
+TestCase.maxDiff = None
 
 from freezegun import freeze_time
 
@@ -42,6 +43,11 @@ class TestScheduler(TestCase):
 
     def test_can_find_todos_with_most_recent_first(self):
         """Check found tasks are in order of most recent -> most historic."""
+        #Arrange 
+        
+        #Act 
+
+        #Assert 
 
 
 class TestController(TestCase):

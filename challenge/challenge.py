@@ -1,7 +1,9 @@
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from timeit import repeat
 from typing import Union, List
+
 
 
 @dataclass
@@ -24,34 +26,45 @@ class HourlyTask:
     @property
     def next_to_do(self) -> Union[datetime, None]:
         """Return the next datetime that needs doing."""
-        #If no task for the most recent hour, return that hour 
-        if self.latest_done == None: 
-            #Abstract the below out into method into separate abstract helper class for getting the current time - this is not dry 
-            now = datetime.utcnow()
-            now_hour_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            last_hour_start = now_hour_start - timedelta(hours=1)
-            self._next_to_do = last_hour_start
-            return self._next_to_do 
-        #Determine if backfilled task to do   
-        if self.earliest_done != self.start_from: 
-            next_todo = self.earliest_done - timedelta(hours=1)
+        #Abstract the below out into method into separate abstract helper class for getting the current time - this is not dry 
+        formatted_time = FormattedDate(datetime.utcnow())
+        last_hour_start = formatted_time.get_last_hour_start
+        task_hour_start = FormattedDate(self.start_from).get_now_hour_start
+
+        #If task to be done is in the current hour return none - as too late
+        if task_hour_start > last_hour_start or last_hour_start == self.repeat_until: 
+            return None
+
+        #If the latest done doesn't exist or its less than current time, return current hour todo
+        if self.latest_done == None or self.latest_done < last_hour_start: 
+            self._next_to_do  = last_hour_start
+            return self._next_to_do
+  
+        #If backdated, return previous hour to earliest done so far
+        if self.earliest_done != None:
+            next_todo = self.earliest_done + timedelta(hours=1)
             self._next_to_do = next_todo
             return self._next_to_do 
         #Otherwise, task is currently up to date
         return None
 
+    
+
     def schedule(self, when: datetime) -> None:
         """Schedule this task at the 'when' time, update local time markers."""
         #If its not the current time, update the earliest done 
-        now = datetime.utcnow()
-        now_hour_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        last_hour_start = now_hour_start - timedelta(hours=1)
+        formatted_time = FormattedDate(datetime.utcnow())
+        last_hour_start = formatted_time.get_last_hour_start
+      
         #Set to latest done if when matches most recent time 
-        if when != last_hour_start:
+        if when == last_hour_start:
             self.latest_done = when
-            return None 
+            #If there is no earliest done set that to be earliest done 
+            if self.earliest_done == None: 
+                self.earliest_done = when
+            return
         #Else it's backfilled
-        self.earliest_done = last_hour_start
+        self.earliest_done = when
         #If its the current hour update the lastest done 
         raise NotImplementedError("Fill me in!")
 
@@ -72,13 +85,14 @@ class Scheduler:
         [self.register_task(task) for task in task_list]
 
     def get_tasks_to_do(self) -> List[HourlyTask]:
+        
         """Get the list of tasks that need doing."""
         tasks = self.task_store
         tasks_todo = []
         for task in tasks:
             if task.next_to_do != None:
-                tasks_todo.append(task.next_to_do)
-        return [tasks_todo]
+                tasks_todo.append(task)
+        return tasks_todo
 
     def schedule_tasks(self) -> None:
         """Schedule the tasks.
@@ -86,12 +100,30 @@ class Scheduler:
         Tasks should be prioritised so that tasks with a recent "to do" date
         are done before any that need backfilling.
         """
-        tasks = self.get_tasks_to_do()
-        now = datetime.utcnow()
-        now_hour_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        last_hour_start = now_hour_start - timedelta(hours=1)
-        [task.schedule(last_hour_start) for task in tasks]
+        tasks = self.get_sorted_tasks_to_do()
+        formatted_time = FormattedDate( datetime.utcnow())
+        last_hour_start = formatted_time.get_last_hour_start
+        for task in tasks: 
+            task.schedule(last_hour_start)
+    
+    #Getting sorted tasks 
+    def get_sorted_tasks_to_do(self) -> List[HourlyTask]: 
+        last_hour_start = FormattedDate(datetime.utcnow()).get_last_hour_start
+        all_tasks_to_do = self.get_tasks_to_do()
+        primary_tasks_to_do = []
+        backdated_tasks_to_do = []
+        for task in all_tasks_to_do: 
+            if task.latest_done == None: 
+                primary_tasks_to_do.append(task)
+                continue
+            if task.latest_done >= last_hour_start: 
+                backdated_tasks_to_do.append(task)
+                continue
+            primary_tasks_to_do.append(task)
 
+        backdated_tasks_to_do.sort()
+        sorted_tasks = primary_tasks_to_do + backdated_tasks_to_do
+        return sorted_tasks
 
 @dataclass
 class Controller:
@@ -120,7 +152,51 @@ class Controller:
             wait = self.throttle_wait.total_seconds() - elapsed.total_seconds()
             time.sleep(max([0, wait]))
 
+
+@dataclass 
+class FormattedDate: 
+    """To create relevant date time in appropriate format """
+    
+    def __init__(self, given_date):
+        self.given_date = given_date
+
+    @property
+    def get_now_hour_start(self) -> datetime: 
+        self._get_now_hour_start = self.given_date.replace(minute=0, second=0, microsecond=0)
+        return self._get_now_hour_start
+
+
+    @property
+    def get_last_hour_start (self) -> datetime: 
+        self._get_last_hour_start = self.get_now_hour_start  - timedelta(hours=1)
+        return self._get_last_hour_start
+
+
+
 sch = Scheduler()
-task1 = HourlyTask(start_from=datetime.utcnow())
-sch.register_task(task1)
-sch.get_tasks_to_do()
+
+#dates
+date1 = datetime(2022, 7, 31)
+date2 = datetime(2022,8,1)
+date3 = datetime(2022,8,2)
+
+#hours
+last_hour_start = FormattedDate(datetime.utcnow()).get_now_hour_start
+now_hour_start = FormattedDate(datetime.utcnow()).get_last_hour_start
+backdated_time_1 = FormattedDate(datetime.utcnow()).get_last_hour_start - timedelta(hours = 1)
+backdated_time_2 = FormattedDate(datetime.utcnow()).get_last_hour_start - timedelta(hours = 2)
+
+task_too_late = HourlyTask(start_from=datetime.utcnow())
+
+#Should be first
+task_with_todo = HourlyTask(start_from=date2)
+
+#Should be second
+unfinished_task_backdate =HourlyTask(start_from=date3, latest_done=backdated_time_1,earliest_done=backdated_time_2)
+
+#Should be last
+finished_task_with_backdate = HourlyTask(start_from=date1, latest_done=last_hour_start, earliest_done=backdated_time_1)
+
+sch.register_tasks([task_with_todo,task_with_todo,finished_task_with_backdate])
+sorted_todos = sch.get_sorted_tasks_to_do()
+
