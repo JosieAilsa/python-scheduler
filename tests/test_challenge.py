@@ -56,11 +56,16 @@ class TestScheduler(TestCase):
             unfinished_task = HourlyTask(start_from=yesterday)        
             unfinished_task_with_backdate =HourlyTask(start_from=yesterday, latest_done=backdated_time_1,earliest_done=backdated_time_2)
             finished_task_with_backdate = HourlyTask(start_from=yesterday, latest_done=last_hour_start, earliest_done=backdated_time_1)
-            finished_task = HourlyTask(start_from=yesterday, latest_done=now_hour_start)
+            finished_task = HourlyTask(start_from=yesterday, earliest_done=yesterday, latest_done=now_hour_start)
 
     #Act 
-        sch.register_tasks([finished_task_with_backdate, unfinished_task, unfinished_task_with_backdate, finished_task])
-        sorted_todos = sch.get_sorted_tasks_to_do()
+            sch.register_tasks([finished_task_with_backdate, unfinished_task, unfinished_task_with_backdate, finished_task])
+            sorted_todos = sch.get_sorted_tasks_to_do()
+            manually_sorted_tasks = [unfinished_task, unfinished_task_with_backdate,finished_task_with_backdate]
+            print(last_hour_start)
+            print(now_hour_start)
+            print("This is the code sorted tasks ", sorted_todos)
+            print("This the manually sorted ones ", manually_sorted_tasks)
     #Assert 
         self.assertEqual(sorted_todos, [unfinished_task, unfinished_task_with_backdate,finished_task_with_backdate])
 

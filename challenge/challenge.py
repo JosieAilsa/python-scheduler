@@ -42,10 +42,11 @@ class HourlyTask:
 
 
         #If backdated, return previous hour to earliest done so far
-        if self.earliest_done != None:
-            next_todo = self.earliest_done + timedelta(hours=1)
+        if self.earliest_done != None and self.earliest_done != self.start_from:
+            next_todo = self.earliest_done - timedelta(hours=1)
             self._next_to_do = next_todo
             return self._next_to_do 
+        
         #Otherwise, task is currently up to date
         return None
 
@@ -190,5 +191,6 @@ finished_task = HourlyTask(start_from=date, latest_done=now_hour_start)
 #Act 
 sch.register_tasks([finished_task_with_backdate, unfinished_task, unfinished_task_with_backdate, finished_task])
 sorted_todos = sch.get_sorted_tasks_to_do()
-print(now_hour_start)
-print(sorted_todos)
+
+print("Sorted", sch.get_sorted_tasks_to_do())
+print("Not sorted",sch.get_tasks_to_do())
