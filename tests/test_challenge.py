@@ -66,8 +66,6 @@ class TestScheduler(TestCase):
 
     
 
-
-
 class TestController(TestCase):
     """Test the scheduler controller."""
 
