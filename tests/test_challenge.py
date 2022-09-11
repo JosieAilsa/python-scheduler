@@ -15,21 +15,9 @@ class TestHourlyTask(TestCase):
         """Check we can make a task at all."""
         task = HourlyTask(start_from=datetime(2022, 8, 1))
         self.assertEqual(task.start_from, datetime(2022, 8, 1))
-
-
-class TestScheduler(TestCase):
-    """Test the Scheduler class."""
-
-    def test_can_register_a_task(self):
-        """Check a Scheduler can register an HourlyTask."""
-        sch = Scheduler()
-        task1 = HourlyTask(start_from=datetime.utcnow())
-        sch.register_task(task1)
-        self.assertEqual(sch.task_store, [task1])
     
-
-    def will_register_backdated_task_correctly(self):
-    #Arrange
+    def test_will_register_backdated_task_correctly(self):
+        """Check a task can correctly schedule itself, updating locals correctly."""       
         with freeze_time(datetime(2022, 8, 1, 8, 15)):
             yesterday = datetime(2022, 7, 31)
             last_hour_start = FormattedDate(datetime.utcnow()).get_last_hour_start
@@ -40,14 +28,23 @@ class TestScheduler(TestCase):
             
             task_2 = HourlyTask(start_from=yesterday, earliest_done=backdated_time_1, latest_done=last_hour_start )
             task_2_after_sch = HourlyTask(start_from=yesterday, earliest_done=backdated_time_2, latest_done=last_hour_start)
-    #Act        
+        #Act        
             task_1.schedule(last_hour_start)
             task_2.schedule(backdated_time_2)
-    #Assert
+        #Assert
             self.assertEqual(task_1,task_1_after_sch)
             self.assertEqual(task_2,task_2_after_sch)
         
 
+class TestScheduler(TestCase):
+    """Test the Scheduler class."""
+
+    def test_can_register_a_task(self):
+        """Check a Scheduler can register an HourlyTask."""
+        sch = Scheduler()
+        task1 = HourlyTask(start_from=datetime.utcnow())
+        sch.register_task(task1)
+        self.assertEqual(sch.task_store, [task1])
             
 
     def test_can_find_any_tasks_to_do(self):
@@ -89,7 +86,6 @@ class TestScheduler(TestCase):
         self.assertEqual(sorted_todos, manually_sorted_tasks)
 
 
-    
 
 class TestController(TestCase):
     """Test the scheduler controller."""
