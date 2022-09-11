@@ -26,6 +26,28 @@ class TestScheduler(TestCase):
         task1 = HourlyTask(start_from=datetime.utcnow())
         sch.register_task(task1)
         self.assertEqual(sch.task_store, [task1])
+    
+
+    def will_register_backdated_task_correctly(self):
+    #Arrange
+        with freeze_time(datetime(2022, 8, 1, 8, 15)):
+            yesterday = datetime(2022, 7, 31)
+            last_hour_start = FormattedDate(datetime.utcnow()).get_last_hour_start
+            backdated_time_1 = last_hour_start - timedelta(hours = 2)
+            backdated_time_2 = last_hour_start - timedelta(hours = 3)
+            task_1 = HourlyTask(start_from=yesterday) 
+            task_1_after_sch = HourlyTask(start_from=yesterday, earliest_done=last_hour_start, latest_done=last_hour_start)  
+            
+            task_2 = HourlyTask(start_from=yesterday, earliest_done=backdated_time_1, latest_done=last_hour_start )
+            task_2_after_sch = HourlyTask(start_from=yesterday, earliest_done=backdated_time_2, latest_done=last_hour_start)
+    #Act        
+            updated_task = task_1.sch(last_hour_start)
+    #Assert
+            self.assertEqual(updated_task,task_1_after_sch)
+            self.assertEqual(task_2,task_2_after_sch)
+        
+
+            
 
     def test_can_find_any_tasks_to_do(self):
         """Check a Scheduler can correctly select tasks that need doing."""
@@ -62,12 +84,9 @@ class TestScheduler(TestCase):
             sch.register_tasks([finished_task_with_backdate, unfinished_task, unfinished_task_with_backdate, finished_task])
             sorted_todos = sch.get_sorted_tasks_to_do()
             manually_sorted_tasks = [unfinished_task, unfinished_task_with_backdate,finished_task_with_backdate]
-            print(last_hour_start)
-            print(now_hour_start)
-            print("This is the code sorted tasks ", sorted_todos)
-            print("This the manually sorted ones ", manually_sorted_tasks)
     #Assert 
-        self.assertEqual(sorted_todos, [unfinished_task, unfinished_task_with_backdate,finished_task_with_backdate])
+        self.assertEqual(sorted_todos, manually_sorted_tasks)
+
 
     
 
