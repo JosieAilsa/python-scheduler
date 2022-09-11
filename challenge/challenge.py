@@ -54,21 +54,18 @@ class HourlyTask:
 
     def schedule(self, when: datetime) -> None:
         """Schedule this task at the 'when' time, update local time markers."""
-        #If its not the current time, update the earliest done 
-        formatted_time = FormattedDate(datetime.utcnow())
+        formatted_time = FormattedDate( datetime.utcnow())
         last_hour_start = formatted_time.get_last_hour_start
-      
-        #Set to latest done if when matches most recent time 
-        if when == last_hour_start:
-            self.latest_done = when
-            #If there is no earliest done set that to be earliest done 
+    #If it's not upto date with latest time   
+        if when != self.latest_done and self.latest_done != last_hour_start: 
+            self.latest_done = when 
             if self.earliest_done == None: 
                 self.earliest_done = when
-            return
-        #Else it's backfilled
+            return 
         self.earliest_done = when
-        #If its the current hour update the lastest done 
-        raise NotImplementedError("Fill me in!")
+
+
+        
 
 
 class Scheduler:
@@ -175,22 +172,14 @@ class FormattedDate:
 
 
 
-sch = Scheduler()
-date= datetime.utcnow()
-yesterday= datetime.utcnow() - timedelta(days = 1)
-last_hour_start = FormattedDate(date).get_last_hour_start
-now_hour_start = FormattedDate(date).get_now_hour_start
-backdated_time_1 = last_hour_start - timedelta(hours = 1)
-backdated_time_2 = last_hour_start - timedelta(hours = 2)
 
-unfinished_task = HourlyTask(start_from=yesterday)        
-unfinished_task_with_backdate =HourlyTask(start_from=yesterday, latest_done=backdated_time_1,earliest_done=backdated_time_2)
-finished_task_with_backdate = HourlyTask(start_from=yesterday, latest_done=last_hour_start, earliest_done=backdated_time_1)
-finished_task = HourlyTask(start_from=date, latest_done=now_hour_start)
+yesterday = datetime(2022, 7, 31)
+last_hour_start = FormattedDate(datetime.utcnow()).get_last_hour_start
+backdated_time_1 = last_hour_start - timedelta(hours = 2)
+backdated_time_2 = last_hour_start - timedelta(hours = 3)
+         
+task_2 = HourlyTask(start_from=yesterday, earliest_done=backdated_time_1, latest_done=last_hour_start)
+task_2_after_sch = HourlyTask(start_from=yesterday, earliest_done=backdated_time_2, latest_done=last_hour_start)
 
-#Act 
-sch.register_tasks([finished_task_with_backdate, unfinished_task, unfinished_task_with_backdate, finished_task])
-sorted_todos = sch.get_sorted_tasks_to_do()
-
-print("Sorted", sch.get_sorted_tasks_to_do())
-print("Not sorted",sch.get_tasks_to_do())
+task_2.schedule(backdated_time_2)
+print(task_2)

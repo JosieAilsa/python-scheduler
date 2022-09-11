@@ -41,9 +41,10 @@ class TestScheduler(TestCase):
             task_2 = HourlyTask(start_from=yesterday, earliest_done=backdated_time_1, latest_done=last_hour_start )
             task_2_after_sch = HourlyTask(start_from=yesterday, earliest_done=backdated_time_2, latest_done=last_hour_start)
     #Act        
-            updated_task = task_1.sch(last_hour_start)
+            task_1.schedule(last_hour_start)
+            task_2.schedule(backdated_time_2)
     #Assert
-            self.assertEqual(updated_task,task_1_after_sch)
+            self.assertEqual(task_1,task_1_after_sch)
             self.assertEqual(task_2,task_2_after_sch)
         
 
@@ -112,24 +113,3 @@ class TestController(TestCase):
                 datetime(2022, 8, 1, 7)
             )
 
-    # #Arrange   
-    # date1 = datetime(2022, 7, 31)
-    # date2 = datetime(2022,8,1)
-    # date3 = datetime(2022,8,2)
-    # #hours
-    # last_hour_start = FormattedDate(datetime.utcnow()).get_now_hour_start
-    # now_hour_start = FormattedDate(datetime.utcnow()).get_last_hour_start
-    # backdated_time_1 = FormattedDate(datetime.utcnow()).get_last_hour_start - timedelta(hours = 1)
-    # backdated_time_2 = FormattedDate(datetime.utcnow()).get_last_hour_start - timedelta(hours = 2)
-
-    # #Should be first
-    # task_with_todo = HourlyTask(start_from=date2)
-
-    # #Should be second
-    # unfinished_task_backdate =HourlyTask(start_from=date3, latest_done=backdated_time_1,earliest_done=backdated_time_2)
-
-    # #Should be last
-    # finished_task_with_backdate = HourlyTask(start_from=date1, latest_done=last_hour_start, earliest_done=backdated_time_1)
-
-    # sch.register_tasks([task_with_todo,task_with_todo,finished_task_with_backdate])
-    # sorted_todos = sch.get_sorted_tasks_to_do()
