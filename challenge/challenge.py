@@ -4,10 +4,9 @@ from datetime import datetime, timedelta
 from timeit import repeat
 from typing import Union, List
 
-# TODO: Add before each/after each as tests are not DRY 
+# TODO: Add set up/tear down for tests  
 #     - Add encapsulation with getters and setters esp for Hourly Task class 
 #     - Add more negative tests 
-#     - Add integration tests
 
 
 @dataclass
