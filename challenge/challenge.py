@@ -82,14 +82,16 @@ class Scheduler:
 
     def register_task(self, task: HourlyTask) -> None:
         """Add a task to the local store of tasks known about."""
+        if not isinstance(task,HourlyTask):
+            raise ValueError("Invalid Hourly Task")
         self.task_store.append(task)
+    
 
     def register_tasks(self, task_list: List[HourlyTask]) -> None:
         """Add several tasks to the local store of tasks."""
         [self.register_task(task) for task in task_list]
 
-    def get_tasks_to_do(self) -> List[HourlyTask]:
-        
+    def get_tasks_to_do(self) -> List[HourlyTask]: 
         """Get the list of tasks that need doing."""
         tasks = self.task_store
         tasks_todo = []

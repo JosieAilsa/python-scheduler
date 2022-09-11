@@ -98,6 +98,14 @@ class TestScheduler(TestCase):
             sorted_todos = sch.get_sorted_tasks_to_do()
             self.assertNotEqual(sorted_todos,[finished_task])
 
+    def test_does_not_add_invalid_values_to_task_list(self): 
+        """Invalid inputs for tasks throws an exception"""
+        sch = Scheduler()
+        with self.assertRaises(ValueError):
+            sch.register_task("Hello")
+       
+
+
 
 
 class TestController(TestCase):
