@@ -16,7 +16,7 @@ class TestHourlyTask(TestCase):
         task = HourlyTask(start_from=datetime(2022, 8, 1))
         self.assertEqual(task.start_from, datetime(2022, 8, 1))
     
-    def test_will_register_backdated_task_correctly(self):
+    def test_can_register_backdated_task_correctly(self):
         """Check a task can correctly schedule itself, updating locals correctly."""       
         with freeze_time(datetime(2022, 8, 1, 8, 15)):
             yesterday = datetime(2022, 7, 31)
@@ -84,6 +84,19 @@ class TestScheduler(TestCase):
             manually_sorted_tasks = [unfinished_task, unfinished_task_with_backdate,finished_task_with_backdate]
     #Assert 
         self.assertEqual(sorted_todos, manually_sorted_tasks)
+
+    def test_does_not_add_finished_tasks_to_todo_list(self):
+        """Complete tasks are not added to todo list."""
+        sch = Scheduler()
+        with freeze_time(datetime(2022, 8, 1, 8, 15)):
+            yesterday = datetime(2022, 7, 31)
+            # last_hour_start = FormattedDate(datetime.utcnow()).get_last_hour_start
+            now_hour_start = FormattedDate(datetime.utcnow()).get_now_hour_start
+            finished_task = HourlyTask(start_from=yesterday, earliest_done=yesterday, latest_done=now_hour_start)
+        #Act 
+            sch.register_tasks([finished_task])
+            sorted_todos = sch.get_sorted_tasks_to_do()
+            self.assertNotEqual(sorted_todos,[finished_task])
 
 
 
