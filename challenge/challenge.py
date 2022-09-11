@@ -4,6 +4,10 @@ from datetime import datetime, timedelta
 from timeit import repeat
 from typing import Union, List
 
+# TODO: Add before each/after each as tests are not DRY 
+#     - Add encapsulation with getters and setters esp for Hourly Task class 
+#     - Add more negative tests 
+#     - Add integration tests
 
 
 @dataclass
@@ -31,7 +35,7 @@ class HourlyTask:
         last_hour_start = formatted_time.get_last_hour_start
         task_hour_start = FormattedDate(self.start_from).get_now_hour_start
 
-          #If task to be done is in the current hour return none - as too late
+        #If task to be done is in the current hour return none - as too late
         if task_hour_start > last_hour_start or last_hour_start == self.repeat_until: 
             return None  
 
@@ -56,12 +60,13 @@ class HourlyTask:
         """Schedule this task at the 'when' time, update local time markers."""
         formatted_time = FormattedDate( datetime.utcnow())
         last_hour_start = formatted_time.get_last_hour_start
-    #If it's not upto date with latest time   
+    #If not up to date with latest time, then update latest done   
         if when != self.latest_done and self.latest_done != last_hour_start: 
             self.latest_done = when 
             if self.earliest_done == None: 
                 self.earliest_done = when
             return 
+    #Otherwise update backdated 
         self.earliest_done = when
 
 
